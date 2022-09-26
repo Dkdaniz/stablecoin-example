@@ -1,11 +1,11 @@
 require("@nomicfoundation/hardhat-toolbox");
+require("@nomicfoundation/hardhat-chai-matchers")
 require('@nomiclabs/hardhat-etherscan');
 require('@nomiclabs/hardhat-waffle');
 require("@nomiclabs/hardhat-ethers");
 require('hardhat-gas-reporter');
 require('solidity-coverage');
 require('hardhat-contract-sizer');
-
 
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
