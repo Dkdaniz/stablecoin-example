@@ -75,4 +75,5 @@ contract Stablecoin is ERC20, Pausable, AccessControl {
     require(_getBlackListStatus(from) == false, "Stablecoin: impossible transfer because user is in the blacklist");
     super._beforeTokenTransfer(from, to, amount);
   }
+  
 }

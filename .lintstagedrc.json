@@ -1,8 +1,0 @@
-{
-    "*.sol": [
-        "npm run-scripts test"
-    ],
-    "*.js": [
-        "npm run-scripts test"
-    ]
-}
