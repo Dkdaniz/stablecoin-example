@@ -3,14 +3,13 @@ pragma solidity ^0.8.9;
 
 import "./AccessControl.sol";
 import "./ERC20.sol";
-import "./ERC20Burnable.sol";
 import "./Pausable.sol";
 
 contract Stablecoin is ERC20, Pausable, AccessControl {
   bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
   bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
-  mapping (address => bool) public isBlackListed;
+  mapping (address => bool) private _isBlackListed;
 
   event DestroyedBlackFunds(address _blackListedUser, uint _balance);
   event AddedBlackList(address _user);
@@ -27,7 +26,7 @@ contract Stablecoin is ERC20, Pausable, AccessControl {
   }
 
   function getBlackListStatus(address _maker) external view returns (bool) {
-    return isBlackListed[_maker];
+    return _getBlackListStatus(_maker);
   } 
 
   function pause() public onlyRole(PAUSER_ROLE) {
@@ -47,28 +46,33 @@ contract Stablecoin is ERC20, Pausable, AccessControl {
   }
   
   function addBlackList (address _evilUser) external onlyRole(DEFAULT_ADMIN_ROLE) {
-    isBlackListed[_evilUser] = true;
+    _isBlackListed[_evilUser] = true;
     emit AddedBlackList(_evilUser);
   }
 
   function removeBlackList (address _clearedUser) external onlyRole(DEFAULT_ADMIN_ROLE) {
-    isBlackListed[_clearedUser] = false;
+    _isBlackListed[_clearedUser] = false;
     emit RemovedBlackList(_clearedUser);
   }
 
   function destroyBlackFunds (address _blackListedUser) external onlyRole(DEFAULT_ADMIN_ROLE) {
-    require(isBlackListed[_blackListedUser], "Stablecoin: user dont is in blacklist");
-    
+    require(_isBlackListed[_blackListedUser], "Stablecoin: user dont is in the blacklist");
+
     uint dirtyFunds = balanceOf(_blackListedUser);
     _destroyFundsAccount(_blackListedUser, dirtyFunds);
     emit DestroyedBlackFunds(_blackListedUser, dirtyFunds);
   }
+
+  function _getBlackListStatus(address _maker) internal view returns (bool) {
+    return _isBlackListed[_maker];
+  } 
 
   function _beforeTokenTransfer(
     address from,
     address to,
     uint256 amount
   ) internal override whenNotPaused {
+    require(_getBlackListStatus(from) == false, "Stablecoin: impossible transfer because user is in the blacklist");
     super._beforeTokenTransfer(from, to, amount);
   }
 }

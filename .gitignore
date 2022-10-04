@@ -9,7 +9,6 @@ typechain-types
 cache
 artifacts
 
-
 node_modules
 .env
 coverage
@@ -21,3 +20,4 @@ typechain-types
 cache
 artifacts
 
+.DS_Store
