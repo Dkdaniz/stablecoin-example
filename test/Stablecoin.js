@@ -10,7 +10,7 @@ const getSigners = async () => {
 }
 
 async function deployStablecoin() {
-  const { owner, addr1, addr2 } = await  getSigners()
+  const { owner, addr1, addr2 } = await getSigners()
 
   const Stablecoin = await ethers.getContractFactory("Stablecoin");
   const stablecoin = await Stablecoin.deploy();
@@ -75,7 +75,7 @@ describe('Stablecoin', function() {
       await expect(stablecoin.connect(addr1).mint(addr1.address, 1)).to.be.revertedWith(/AccessControl: account .* is missing role .*/)
     });
 
-    it("Should returns pause status equal true",  async () => {
+    it("Should returns balance equal 10",  async () => {
       const { stablecoin, owner, addr1 } = await loadFixture(deployStablecoin);
 
       await stablecoin.connect(owner).mint(addr1.address, ethers.utils.parseUnits('10', 'ether'));
@@ -132,7 +132,7 @@ describe('Stablecoin', function() {
     })
   })
 
-  describe('getBlackListStatus', async() => {
+  describe('GetBlackListStatus', async() => {
     it("Should returns account block is false",  async () => {
       const { stablecoin, owner } = await loadFixture(deployStablecoin);
 
@@ -162,7 +162,7 @@ describe('Stablecoin', function() {
     })
   }) 
 
-  describe('removeBlackList', function() {
+  describe('RemoveBlackList', function() {
     it("Should returns error role access",  async () => {
       const { stablecoin, owner, addr1, } = await loadFixture(deployStablecoin);
 
@@ -190,17 +190,51 @@ describe('Stablecoin', function() {
     })
   }) 
 
-  describe('destroyBlackFunds', function() {
+  describe('BeforeTokenTransfer', function() {
+    it("Should returns error Pausable: paused",  async () => {
+      const { stablecoin, owner, addr1, } = await loadFixture(deployStablecoin);
+
+      await stablecoin.connect(owner).pause();
+
+      await expect(stablecoin.connect(owner).transfer(addr1.address, 10)).to.be.revertedWith("Pausable: paused")
+    });
+
+    context('Trying transfer token to address', async () => {
+      before(async () => {
+        const { stablecoin, owner, addr1} = await loadFixture(deployStablecoin);
+
+        await stablecoin.connect(owner).mint(addr1.address, ethers.utils.parseUnits('10', 'ether'));
+        await stablecoin.connect(owner).addBlackList(addr1.address);
+
+        this.stablecoin = stablecoin;
+      });
+
+      it("Should returns error Stablecoin: impossible transfer because user is in the blacklist",  async () => {
+        const { addr1, addr2 } = await getSigners()
+        await expect(this.stablecoin.connect(addr1).transfer(addr2.address, ethers.utils.parseUnits('10', 'ether'))).to.be.revertedWith("Stablecoin: impossible transfer because user is in the blacklist")
+      });
+
+      it("Should returns balance of 10 token to address 2",  async () => {
+        const { owner, addr1, addr2 } = await getSigners()
+
+        await this.stablecoin.connect(owner).removeBlackList(addr1.address);
+        await this.stablecoin.connect(addr1).transfer(addr2.address, ethers.utils.parseUnits('10', 'ether'))
+        expect(await this.stablecoin.connect(owner).balanceOf(addr2.address)).to.equal(ethers.utils.parseUnits('10', 'ether'));
+      });
+    })
+  }) 
+
+  describe('DestroyBlackFunds', function() {
     it("Should returns error role access",  async () => {
       const { stablecoin, owner, addr1, } = await loadFixture(deployStablecoin);
 
       await expect(stablecoin.connect(addr1).destroyBlackFunds(owner.address)).to.be.revertedWith(/AccessControl: account .* is missing role .*/)
     });
 
-    it("Should returns error user dont is in blacklist",  async () => {
+    it("Should returns error user dont is in the blacklist",  async () => {
       const { stablecoin, owner, addr1, } = await loadFixture(deployStablecoin);
 
-      await expect(stablecoin.connect(owner).destroyBlackFunds(addr1.address)).to.be.revertedWith("Stablecoin: user dont is in blacklist")
+      await expect(stablecoin.connect(owner).destroyBlackFunds(addr1.address)).to.be.revertedWith("Stablecoin: user dont is in the blacklist")
     });
 
     context('Trying destroy funds of addr1', async () => {
